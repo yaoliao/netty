@@ -366,8 +366,6 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
         return new ReferenceCountedOpenSslEngine(this, alloc, peerHost, peerPort, jdkCompatibilityMode, true);
     }
 
-    abstract OpenSslKeyMaterialManager keyMaterialManager();
-
     /**
      * Returns a new server-side {@link SSLEngine} with the current configuration.
      */

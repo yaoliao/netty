@@ -63,6 +63,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -154,11 +155,11 @@ final class SniClientJava8TestUtil {
         }
     }
 
-    static void assertSSLSession(SSLSession session, String name) {
-        assertSSLSession(session, new SNIHostName(name));
+    static void assertSSLSession(boolean clientSide, SSLSession session, String name) {
+        assertSSLSession(clientSide, session, new SNIHostName(name));
     }
 
-    private static void assertSSLSession(SSLSession session, SNIServerName name) {
+    private static void assertSSLSession(boolean clientSide, SSLSession session, SNIServerName name) {
         Assert.assertNotNull(session);
         if (session instanceof ExtendedSSLSession) {
             ExtendedSSLSession extendedSSLSession = (ExtendedSSLSession) session;
@@ -166,6 +167,17 @@ final class SniClientJava8TestUtil {
             Assert.assertEquals(1, names.size());
             Assert.assertEquals(name, names.get(0));
             Assert.assertTrue(extendedSSLSession.getLocalSupportedSignatureAlgorithms().length > 0);
+            if (clientSide) {
+                Assert.assertEquals(0, extendedSSLSession.getPeerSupportedSignatureAlgorithms().length);
+            } else {
+                if (session instanceof OpenSslSession && OpenSslTestUtils.isBoringSSL()) {
+                    // BoringSSL does not support SSL_get_sigalgs(...)
+                    // https://boringssl.googlesource.com/boringssl/+/ba16a1e405c617f4179bd780ad15522fb25b0a65%5E%21/
+                    Assert.assertEquals(0, extendedSSLSession.getPeerSupportedSignatureAlgorithms().length);
+                } else {
+                    Assert.assertTrue(extendedSSLSession.getPeerSupportedSignatureAlgorithms().length > 0);
+                }
+            }
         }
     }
 
@@ -215,7 +227,7 @@ final class SniClientJava8TestUtil {
                 @Override
                 public void checkServerTrusted(X509Certificate[] x509Certificates, String s, SSLEngine sslEngine)
                         throws CertificateException {
-                    assertSSLSession(sslEngine.getHandshakeSession(), name);
+                    assertSSLSession(sslEngine.getUseClientMode(), sslEngine.getHandshakeSession(), name);
                 }
 
                 @Override
@@ -311,7 +323,7 @@ final class SniClientJava8TestUtil {
                                                                       SSLEngine sslEngine) {
 
                                     SSLSession session = sslEngine.getHandshakeSession();
-                                    assertSSLSession(session, name);
+                                    assertSSLSession(sslEngine.getUseClientMode(), session, name);
                                     return ((X509ExtendedKeyManager) km)
                                             .chooseEngineServerAlias(s, principals, sslEngine);
                                 }
