@@ -279,13 +279,15 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     private ChannelFuture doBind(final SocketAddress localAddress) {
-        final ChannelFuture regFuture = initAndRegister();
+        final ChannelFuture regFuture = initAndRegister();  // regFuture -> DefaultChannelPromise
         final Channel channel = regFuture.channel();
         if (regFuture.cause() != null) {
             return regFuture;
         }
 
         // 绑定 Channel 的端口，并注册 Channel 到 SelectionKey 中。
+        //  AbstractChannel.AbstractUnsafe#register#safeSetSuccess(promise);  在initAndRegister() 中会调用
+        // 方法(safeSetSuccess)有可能是异步的所以要判断是否已执行， 如果这个方法已经已经执行则为true，否则为false
         if (regFuture.isDone()) {
             // At this point we know that the registration was complete and successful.
             ChannelPromise promise = channel.newPromise();
@@ -293,6 +295,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             return promise;
         } else {
             // Registration future is almost always fulfilled already, but just in case it's not.
+            //  为 regFuture t添加异步的回调 当SetSuccess(promise)方法执行完成后回调
             final PendingRegistrationPromise promise = new PendingRegistrationPromise(channel);
             regFuture.addListener(new ChannelFutureListener() {
                 @Override
@@ -307,6 +310,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
                         // See https://github.com/netty/netty/issues/2586
                         promise.registered();
 
+                        // 执行具体的绑定 (里面又是异步的,看的头大....)
                         doBind0(regFuture, channel, localAddress, promise);
                     }
                 }
