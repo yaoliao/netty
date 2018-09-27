@@ -16,11 +16,7 @@
 package io.netty.example.echo;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -71,7 +67,8 @@ public final class EchoServer {
              });
 
             // Start the server.
-            ChannelFuture f = b.bind(PORT).sync();
+            //这个回调在 AbstractChannel.AbstractUnsafe#bind方法中的 safeSetSuccess(promise); 处触发
+            ChannelFuture f = b.bind(PORT).sync().addListener((ChannelFutureListener) future -> System.out.println("啊呀，我被回调了"));
 
             // Wait until the server socket is closed.
             f.channel().closeFuture().sync();

@@ -1,8 +1,12 @@
 
+-------------------- 服务端启动  ServerBootstrap#bind  -------------------------------------
+
 AbstractBootstrap#doBind
 	ChannelFuture regFuture = initAndRegister();
 		channel = channelFactory.newChannel();
 		init(channel);
+		    setChannelOptions(channel, options, logger);
+            channel.attr(key).set(e.getValue());
 			ChannelPipeline p = channel.pipeline();
 			p.addLast(new ChannelInitializer<Channel>() {
 				@Override
@@ -22,43 +26,33 @@ AbstractBootstrap#doBind
 					});
 				}
 			});
-		ChannelFuture regFuture = config().group().register(channel);
+		ChannelFuture regFuture = config().group().register(channel);  //  注册 Channel 到 EventLoopGroup
 			AbstractChannel.AbstractUnsafe#register
 				isCompatible(eventLoop) //校验是否为当前channel匹配的eventLoop   AbstractNioChannel匹配NioEventLoop
 				register0(promise);
 					doRegister(); //AbstractNioChannel#doRegister
 						selectionKey = javaChannel().register(eventLoop().unwrappedSelector(), 0, this); //javaChannel() 获取java原生NIO的channel, register() 将关注的事件注册到Selector
-					pipeline.invokeHandlerAddedIfNeeded(); // 执行 ---标注1--- 
-					safeSetSuccess(promise);	// 执行成功的回调	 ---标注2--- 
+					pipeline.invokeHandlerAddedIfNeeded(); // 执行 ---标注1---
+					safeSetSuccess(promise);	// 执行成功的回调	 ---标注2---
 					pipeline.fireChannelRegistered();  // 触发通知已注册事件
-	doBind0(regFuture, channel, localAddress, promise); //具体的绑定				
+	doBind0(regFuture, channel, localAddress, promise); //具体的绑定  ---标注2---
 		channel.bind(localAddress, promise).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-			return pipeline.bind(localAddress, promise);  //AbstractChannel#bind 
+			return pipeline.bind(localAddress, promise);  //AbstractChannel#bind
 				return tail.bind(localAddress, promise);  //DefaultChannelPipeline#bind   tail= DefaultChannelPipeline.TailContext
 					AbstractChannelHandlerContext#bind
 						final AbstractChannelHandlerContext next = findContextOutbound();
 						EventExecutor executor = next.executor();
 						next.invokeBind(localAddress, promise);
 							((ChannelOutboundHandler) handler()).bind(this, localAddress, promise);
+							.......
+								AbstractChannel#bind
+									doBind(localAddress); // 绑定端口
+										NioServerSocketChannel#doBind
+											.......
+											javaChannel().bind(localAddress, config.getBacklog()); // 获取java的channel,并绑定  真正绑定的地方
+									pipeline.fireChannelActive();  //触发 Channel 激活的事件
+										AbstractNioChannel#doBeginRead  //selectionKey注册accept事件，开始接受客户端连接
+									safeSetSuccess(promise); // 这里回调的是 ChannelFuture f = b.bind(PORT).sync().addListener(....) 的listener
 						
 						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						
-					
+

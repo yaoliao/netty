@@ -419,6 +419,8 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
         final int interestOps = selectionKey.interestOps();
         if ((interestOps & readInterestOp) == 0) {
+            // readInterestOp = SelectionKey.OP_ACCEPT = 1 << 4 = 16;
+            // 开始接受客户端的连接
             selectionKey.interestOps(interestOps | readInterestOp);
         }
     }

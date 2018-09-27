@@ -1,0 +1,22 @@
+
+
+---------------------	客户端启动  Bootstrap#connect  -------------------------------------
+	
+Bootstrap#connect
+	validate();
+	return doResolveAndConnect(remoteAddress, localAddress);
+		initAndRegister();  //和ServerBootStrap调的同一个方法
+			channel = channelFactory.newChannel();
+			init(channel);  // Bootstrap的方法(和ServerBootStrap有区别)
+				setChannelOptions(channel, options, logger);
+				channel.attr((AttributeKey<Object>) e.getKey()).set(e.getValue());
+			ChannelFuture regFuture = config().group().register(channel);	
+				.......
+				AbstractChannel.AbstractUnsafe#register
+					register0(promise);  // 异步调用
+						doRegister();  // AbstractNioCHannel#doRegister
+							selectionKey = javaChannel().register(eventLoop().unwrappedSelector(), 0, this);  //将关注的事件注册到Selector
+						pipeline.invokeHandlerAddedIfNeeded();  // 这里会去调 Bootstrap的handler(..initChannel()) initChannel中的方法  详见:EchoClient
+						safeSetSuccess(promise);  //执行成功的回调  ---标记1---
+						pipeline.fireChannelRegistered();  // 触发通知已注册事件  ???
+		doResolveAndConnect0(channel, remoteAddress, localAddress, promise);  // 这是异步的	  ---标记1---	

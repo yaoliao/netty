@@ -539,6 +539,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
         @Override
         public final void bind(final SocketAddress localAddress, final ChannelPromise promise) {
+            // 判断是否在 EventLoop 的线程中。
             assertEventLoop();
 
             if (!promise.setUncancellable() || !ensureOpen(promise)) {
@@ -560,6 +561,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
             boolean wasActive = isActive();
             try {
+                // 绑定端口
                 doBind(localAddress);
             } catch (Throwable t) {
                 safeSetFailure(promise, t);
@@ -567,6 +569,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+            // 触发 Channel 激活的事件  -- 在AbstractNioChannel#doBeginRead  selectionKey注册accept事件，开始接受客户端连接
             if (!wasActive && isActive()) {
                 invokeLater(new Runnable() {
                     @Override
@@ -576,6 +579,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 });
             }
 
+            // 这里回调的是 ChannelFuture f = b.bind(PORT).sync().addListener(....) 的listener   详见:EchoServer#main
             safeSetSuccess(promise);
         }
 
