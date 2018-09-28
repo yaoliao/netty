@@ -19,4 +19,25 @@ Bootstrap#connect
 						pipeline.invokeHandlerAddedIfNeeded();  // 这里会去调 Bootstrap的handler(..initChannel()) initChannel中的方法  详见:EchoClient
 						safeSetSuccess(promise);  //执行成功的回调  ---标记1---
 						pipeline.fireChannelRegistered();  // 触发通知已注册事件  ???
-		doResolveAndConnect0(channel, remoteAddress, localAddress, promise);  // 这是异步的	  ---标记1---	
+		doResolveAndConnect0(channel, remoteAddress, localAddress, promise);  // 这是异步的	  ---标记1---
+			resolver.resolve(remoteAddress);  // 解析远程地址
+			doConnect(resolveFuture.getNow(), localAddress, promise);  //Bootstrap#doConnect
+				channel.connect(remoteAddress, connectPromise);  //放到eventLoop中异步执行
+					.......
+					AbstractNioChannel.AbstractNioUnsafe#connect
+						doConnect(remoteAddress, localAddress)
+							SocketUtils.connect(javaChannel(), remoteAddress);
+								socketChannel.connect(remoteAddress); //客户端具体的连接
+							selectionKey().interestOps(SelectionKey.OP_CONNECT);  // 在selectionKey中注册CONNECT事件
+						connectTimeoutFuture = eventLoop().schedule(new Runnable() {....  // 启动判断是否超时的定时任务，连接成功后会取消这个任务(finishConnect())
+	AbstractChannel.AbstractUnsafe#finishConnect  //  客户端连接完成时，Selector 轮询到 SelectionKey.OP_CONNECT 事件时，进行触发。
+		doFinishConnect();  // NioSocketChannel#doFinishConnect 判断连接是否完成
+		fulfillConnectPromise(connectPromise, wasActive);
+			promise.trySuccess();  // 这里会回调 EchoClient连接完成后添加的回调, 也会回调 connect() 中的监听
+			pipeline().fireChannelActive();  // 若 Channel 是新激活的，触发通知 Channel 已激活的事件。
+				AbstractNioChannel#doBeginRead  //selectionKey注册read事件，开始接受客户端连接
+					selectionKey.interestOps(interestOps | readInterestOp);  // readInterestOp = SelectionKey.OP_READ = 1 << 0 = 1;  客户端可以读取服务端发送来的数据。
+
+
+
+

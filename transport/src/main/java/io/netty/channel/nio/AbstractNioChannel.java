@@ -245,6 +245,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             }
 
             try {
+                // 目前有正在连接远程地址的 ChannelPromise ，则直接抛出异常，禁止同时发起多个连接。
                 if (connectPromise != null) {
                     // Already a connect in process.
                     throw new ConnectionPendingException();
@@ -258,7 +259,8 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                     requestedRemoteAddress = remoteAddress;
 
                     // Schedule connect timeout.
-                    int connectTimeoutMillis = config().getConnectTimeoutMillis();
+                    int connectTimeoutMillis = config().getConnectTimeoutMillis(); // 默认 30 * 1000 毫秒
+                    // 启动定时任务去判断连接是否超时  当连接成功时会取消这个定时任务  finishConnect()
                     if (connectTimeoutMillis > 0) {
                         connectTimeoutFuture = eventLoop().schedule(new Runnable() {
                             @Override
@@ -273,6 +275,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                         }, connectTimeoutMillis, TimeUnit.MILLISECONDS);
                     }
 
+                    // 在finishConnect()回调 boolean promiseSet = promise.trySuccess();
                     promise.addListener(new ChannelFutureListener() {
                         @Override
                         public void operationComplete(ChannelFuture future) throws Exception {
@@ -303,10 +306,12 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             boolean active = isActive();
 
             // trySuccess() will return false if a user cancelled the connection attempt.
+            // 这里会回调 EchoClient连接完成后添加的回调, 也会回调 connect() 中的监听
             boolean promiseSet = promise.trySuccess();
 
             // Regardless if the connection attempt was cancelled, channelActive() event should be triggered,
             // because what happened is what happened.
+            // 若 Channel 是新激活的，触发通知 Channel 已激活的事件。  会调用doBeginRead()  给Selector添加相应事件
             if (!wasActive && active) {
                 pipeline().fireChannelActive();
             }
@@ -344,6 +349,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             } finally {
                 // Check for null as the connectTimeoutFuture is only created if a connectTimeoutMillis > 0 is used
                 // See https://github.com/netty/netty/issues/1770
+                // 取消超时连接(connectTimeoutFuture )的定时任务
                 if (connectTimeoutFuture != null) {
                     connectTimeoutFuture.cancel(false);
                 }
@@ -419,8 +425,11 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
         final int interestOps = selectionKey.interestOps();
         if ((interestOps & readInterestOp) == 0) {
-            // readInterestOp = SelectionKey.OP_ACCEPT = 1 << 4 = 16;
-            // 开始接受客户端的连接
+            //  ---------- 服务端 --------------
+            // readInterestOp = SelectionKey.OP_ACCEPT = 1 << 4 = 16;  开始接受客户端的连接
+
+            //  ---------- 客户端 --------------
+            // readInterestOp = SelectionKey.OP_READ = 1 << 0 = 1;  客户端可以读取服务端发送来的数据。
             selectionKey.interestOps(interestOps | readInterestOp);
         }
     }

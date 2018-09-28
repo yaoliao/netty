@@ -16,11 +16,7 @@
 package io.netty.example.echo;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -71,7 +67,8 @@ public final class EchoClient {
              });
 
             // Start the client.
-            ChannelFuture f = b.connect(HOST, PORT).sync();
+            // 回调在 AbstractChannel.AbstractUnsafe#finishConnect().fulfillConnectPromise(..).promise.trySuccess();
+            ChannelFuture f = b.connect(HOST, PORT).sync().addListener((ChannelFutureListener) future -> System.out.println("客户端完成连接的回调....."));
 
             // Wait until the connection is closed.
             f.channel().closeFuture().sync();
