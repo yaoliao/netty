@@ -32,7 +32,7 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
     @SuppressWarnings("unchecked")
     @Override
     public EventExecutorChooser newChooser(EventExecutor[] executors) {
-        // 判断是否是2的倍数， 不同的Chooser的next()方法不同
+        // 判断是否是2的倍数(判断数字是否为 2 的幂次方)， 不同的Chooser的next()方法不同
         if (isPowerOfTwo(executors.length)) {
             return new PowerOfTwoEventExecutorChooser(executors);
         } else {
@@ -52,7 +52,11 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
             this.executors = executors;
         }
 
-        // 利用 & 操作来轮询，效率比 % 高
+        // 利用 & 操作来轮询，效率比 % 高   (利用 & 操作来轮询，效率比 % 高   因为 - ( 二元操作符 ) 的计算优先级高于 & ( 一元操作符 ))
+        // 假设 executors.length = 8, 则  executors.length - 1 = 7 = 111
+        //   111  111 111
+        // & 000  001 010
+        // = 000  001 010
         @Override
         public EventExecutor next() {
             return executors[idx.getAndIncrement() & executors.length - 1];
