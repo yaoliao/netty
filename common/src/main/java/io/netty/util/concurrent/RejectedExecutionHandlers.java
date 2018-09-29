@@ -55,9 +55,12 @@ public final class RejectedExecutionHandlers {
                 if (!executor.inEventLoop()) {
                     for (int i = 0; i < retries; i++) {
                         // Try to wake up the executor so it will empty its task queue.
+                        // 唤醒执行器，进行任务执行。这样，就可能执行掉部分任务。
                         executor.wakeup(false);
 
+                        //阻塞一段时间
                         LockSupport.parkNanos(backOffNanos);
+                        // 尝试插入队列
                         if (executor.offerTask(task)) {
                             return;
                         }
