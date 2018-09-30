@@ -58,6 +58,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     private static final int CLEANUP_INTERVAL = 256; // XXX Hard-coded value, but won't need customization.
 
+    // 是否禁用 SelectionKey 的优化，默认开启
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
             SystemPropertyUtil.getBoolean("io.netty.noKeySetOptimization", false);
 
@@ -123,8 +124,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
      */
     private final AtomicBoolean wakenUp = new AtomicBoolean();
 
+    // Select 策略
     private final SelectStrategy selectStrategy;
 
+    // 在 NioEventLoop 中，会三种类型的任务：1) Channel 的就绪的 IO 事件；2) 普通任务；3) 定时任务。而 ioRatio 属性，处理 Channel 的就绪的 IO 事件，占处理任务的总时间的比例。
     private volatile int ioRatio = 50;
     private int cancelledKeys;
     private boolean needsToSelectAgain;
@@ -139,9 +142,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             throw new NullPointerException("selectStrategy");
         }
         provider = selectorProvider;
+        // 创建Selector对象
         final SelectorTuple selectorTuple = openSelector();
-        selector = selectorTuple.selector;
-        unwrappedSelector = selectorTuple.unwrappedSelector;
+        selector = selectorTuple.selector;  // netty包装过的Selector
+        unwrappedSelector = selectorTuple.unwrappedSelector;  //未包装Selector,即java NIO Selector
         selectStrategy = strategy;
     }
 
@@ -262,6 +266,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         return provider;
     }
 
+    // mpsc -> multiple producers (different threads) and a single consumer (one thread!)  多生产者单消费者
     @Override
     protected Queue<Runnable> newTaskQueue(int maxPendingTasks) {
         // This event loop never calls takeTask()
@@ -405,6 +410,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                     case SelectStrategy.CONTINUE:
                         continue;
                     case SelectStrategy.SELECT:
+                        // 重置 wakenUp 标记为 false
                         select(wakenUp.getAndSet(false));
 
                         // 'wakenUp.compareAndSet(false, true)' is always evaluated

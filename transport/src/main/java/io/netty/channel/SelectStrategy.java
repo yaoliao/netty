@@ -27,10 +27,14 @@ public interface SelectStrategy {
 
     /**
      * Indicates a blocking select should follow.
+     *
+     *  表示使用阻塞 select 的策略。    --------> 当 SELECT >= 0 时 ,表示不需要 select ，目前已经有可以执行的任务了。
      */
     int SELECT = -1;
     /**
      * Indicates the IO loop should be retried, no blocking select to follow directly.
+     *
+     * 表示需要进行重试的策略。实际上，默认情况下，不会返回 CONTINUE 的策略。
      */
     int CONTINUE = -2;
 

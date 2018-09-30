@@ -35,6 +35,8 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
     protected static final int DEFAULT_MAX_PENDING_TASKS = Math.max(16,
             SystemPropertyUtil.getInt("io.netty.eventLoop.maxPendingTasks", Integer.MAX_VALUE));
 
+    // 可以用来做批量提交写入的功能 配合executeAfterEventLoopIteration() 使用
+    // http://svip.iocoder.cn/Netty/EventLoop-6-EventLoop-handle-normal-task/   还不是很懂....先记录一下
     private final Queue<Runnable> tailTasks;
 
     protected SingleThreadEventLoop(EventLoopGroup parent, ThreadFactory threadFactory, boolean addTaskWakesUp) {
