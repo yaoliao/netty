@@ -38,6 +38,9 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
                 }
             };
 
+    /**
+     * 定时任务队列
+     */
     PriorityQueue<ScheduledFutureTask<?>> scheduledTaskQueue;
 
     protected AbstractScheduledEventExecutor() {
@@ -77,6 +80,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
             return;
         }
 
+        // 循环，取消所有任务
         final ScheduledFutureTask<?>[] scheduledTasks =
                 scheduledTaskQueue.toArray(new ScheduledFutureTask<?>[0]);
 
@@ -97,16 +101,20 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     /**
      * Return the {@link Runnable} which is ready to be executed with the given {@code nanoTime}.
      * You should use {@link #nanoTime()} to retrieve the correct {@code nanoTime}.
+     *
+     * 获得指定时间内，定时任务队列首个可执行的任务，并且从队列中移除
      */
     protected final Runnable pollScheduledTask(long nanoTime) {
         assert inEventLoop();
 
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
+        // 获得队列首个定时任务。不会从队列中，移除该任务
         ScheduledFutureTask<?> scheduledTask = scheduledTaskQueue == null ? null : scheduledTaskQueue.peek();
         if (scheduledTask == null) {
             return null;
         }
 
+        // 在指定时间内，则返回该任务
         if (scheduledTask.deadlineNanos() <= nanoTime) {
             scheduledTaskQueue.remove();
             return scheduledTask;
@@ -131,6 +139,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         if (scheduledTaskQueue == null) {
             return null;
         }
+        // 获得队列首个定时任务。但是不会移除该任务
         return scheduledTaskQueue.peek();
     }
 
@@ -229,6 +238,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         if (inEventLoop()) {
             scheduledTaskQueue().add(task);
         } else {
+            // 通过 EventLoop 的线程，添加到定时任务队列
             execute(new Runnable() {
                 @Override
                 public void run() {
