@@ -37,6 +37,10 @@ public interface SelectStrategy {
      * 表示需要进行重试的策略。实际上，默认情况下，不会返回 CONTINUE 的策略。
      */
     int CONTINUE = -2;
+    /**
+     * Indicates the IO loop to poll for new events without blocking.
+     */
+    int BUSY_WAIT = -3;
 
     /**
      * The {@link SelectStrategy} can be used to steer the outcome of a potential select

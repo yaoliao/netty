@@ -305,7 +305,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
 
         try {
-            ch.register(selector, interestOps, task);
+            ch.register(unwrappedSelector, interestOps, task);
         } catch (Exception e) {
             throw new EventLoopException("failed to register a channel", e);
         }
@@ -418,6 +418,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 switch (selectStrategy.calculateStrategy(selectNowSupplier, hasTasks())) {
                     case SelectStrategy.CONTINUE:
                         continue;
+
+                    case SelectStrategy.BUSY_WAIT:
+                        // fall-through to SELECT since the busy-wait is not supported with NIO
+
                     case SelectStrategy.SELECT:
                         // 重置 wakenUp 标记为 false
                         select(wakenUp.getAndSet(false));
