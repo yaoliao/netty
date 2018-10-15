@@ -209,12 +209,14 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
             newCtx = newContext(group, filterName(name, handler), handler);
 
+            // 添加节点
             addLast0(newCtx);
 
             // If the registered is false it means that the channel was not registered on an eventloop yet.
             // In this case we add the context to the pipeline and add a task that will call
             // ChannelHandler.handlerAdded(...) once the channel is registered.
             if (!registered) {
+                // 设置 AbstractChannelHandlerContext 准备添加中
                 newCtx.setAddPending();
                 callHandlerCallbackLater(newCtx, true);
                 return this;
@@ -232,6 +234,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                 return this;
             }
         }
+        // 回调 ChannelHandler added 事件
         callHandlerAdded0(newCtx);
         return this;
     }
