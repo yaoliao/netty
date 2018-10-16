@@ -1424,6 +1424,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             ctx.fireChannelActive();
 
+            // 执行 read 逻辑
             readIfIsAutoRead();
         }
 

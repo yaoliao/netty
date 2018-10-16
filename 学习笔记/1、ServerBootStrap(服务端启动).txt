@@ -20,6 +20,7 @@ AbstractBootstrap#doBind
 					ch.eventLoop().execute(new Runnable() {   //在异步执行
 						@Override
 						public void run() {
+						    // ServerBootstrapAcceptor#channelRead 将客户端的channel分发给childGroup 实现reactive的线程模型
 							pipeline.addLast(new ServerBootstrapAcceptor(
 									ch, currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs));
 						}
@@ -54,8 +55,24 @@ AbstractBootstrap#doBind
                                                             NioServerSocketChannel#doBind
                                                                 javaChannel().bind(localAddress, config.getBacklog()); // 获取java的channel,并绑定  真正绑定的地方
                                                         pipeline.fireChannelActive();  //触发 Channel 激活的事件
-                                                            AbstractNioChannel#doBeginRead  //selectionKey注册accept事件，开始接受客户端连接
-                                                        safeSetSuccess(promise); // 这里回调的是 ChannelFuture f = b.bind(PORT).sync().addListener(....) 的listener
+                                                            AbstractChannelHandlerContext.invokeChannelActive(head); // 开始根据 pipeline 顺序执行 ChannelInboundHandler 的 channelActive()方法
+                                                                ....... pipeline 中 ChannelInboundHandler 链表为  head -> LoggingHandler -> ServerBootstrap.ServerBootstrapAcceptor -> tail
+                                                                        ServerBootstrap.ServerBootstrapAcceptor  这个InboundHandler 是ServerBootStrap在初始化的加入pipeline的
+                                                                    ....
+                                                                    readIfIsAutoRead();  在 DefaultChannelPipeline.HeadContext#channelActive 中执行
+                                                                        channel.read();  // channel = NioServerSocketChannel  调用父类 AbstractChannel#read
+                                                                            pipeline.read();  // pipeline = DefaultChannelPipeline  又开始在 pipeline 链里面开始调用。。。
+                                                                                tail.read();  // pipeline链 倒叙调用 OutboundHandler (OutBoundHandler 都是倒叙开始的)
+                                                                                .....
+                                                                                    headContext#read
+                                                                                        unsafe.beginRead();  // unsafe = NioMessageUnsafe
+                                                                                            AbstractUnsafe#beginRead
+                                                                                                doBeginRead();  // AbstractNioMessageChannel
+                                                                                                    selectionKey.interestOps(interestOps | readInterestOp);  // readInterestOp = SelectionKey.OP_ACCEPT = 1 << 4 = 16;  开始接受客户端的连接
+
+
+                                                                                            AbstractNioChannel.AbstractNioUnsafe#doBeginRead  //selectionKey注册accept事件，开始接受客户端连接
+                                                                                            safeSetSuccess(promise); // 这里回调的是 ChannelFuture f = b.bind(PORT).sync().addListener(....) 的listener
 
 						
 						
