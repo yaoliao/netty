@@ -36,6 +36,7 @@ AbstractBootstrap#doBind
 					pipeline.invokeHandlerAddedIfNeeded(); // 执行 ---标注1---
 					safeSetSuccess(promise);	// 执行成功的回调	 ---标注2---
 					pipeline.fireChannelRegistered();  // 触发通知已注册事件
+						......  // 从 pipeline 链表头部开始顺序执行 InboundHandler 的 channelRegistered()
 	doBind0(regFuture, channel, localAddress, promise); //具体的绑定  ---标注2---
 		channel.bind(localAddress, promise).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);  //channel = NioServerSocketChannel  调用父类AbstractChannel#bind
 			return pipeline.bind(localAddress, promise);  //AbstractChannel#bind   pipeline = DefaultChannelPipeline 在构造方法中生成  在pipeline中存在这样的ChannelHandlerContext链:  head -> LoggingHandler -> tail
@@ -54,12 +55,12 @@ AbstractBootstrap#doBind
 							                            doBind(localAddress); // 绑定端口
                                                             NioServerSocketChannel#doBind
                                                                 javaChannel().bind(localAddress, config.getBacklog()); // 获取java的channel,并绑定  真正绑定的地方
-                                                        pipeline.fireChannelActive();  //触发 Channel 激活的事件
+                                                        pipeline.fireChannelActive();  //触发 Channel 激活的事件  这是异步触发的
                                                             AbstractChannelHandlerContext.invokeChannelActive(head); // 开始根据 pipeline 顺序执行 ChannelInboundHandler 的 channelActive()方法
                                                                 ....... pipeline 中 ChannelInboundHandler 链表为  head -> LoggingHandler -> ServerBootstrap.ServerBootstrapAcceptor -> tail
                                                                         ServerBootstrap.ServerBootstrapAcceptor  这个InboundHandler 是ServerBootStrap在初始化的加入pipeline的
                                                                     ....
-                                                                    readIfIsAutoRead();  在 DefaultChannelPipeline.HeadContext#channelActive 中执行
+                                                                    readIfIsAutoRead();  // 执行 read 逻辑   在 DefaultChannelPipeline.HeadContext#channelActive 中执行
                                                                         channel.read();  // channel = NioServerSocketChannel  调用父类 AbstractChannel#read
                                                                             pipeline.read();  // pipeline = DefaultChannelPipeline  又开始在 pipeline 链里面开始调用。。。
                                                                                 tail.read();  // pipeline链 倒叙调用 OutboundHandler (OutBoundHandler 都是倒叙开始的)
@@ -67,12 +68,10 @@ AbstractBootstrap#doBind
                                                                                     headContext#read
                                                                                         unsafe.beginRead();  // unsafe = NioMessageUnsafe
                                                                                             AbstractUnsafe#beginRead
-                                                                                                doBeginRead();  // AbstractNioMessageChannel
+                                                                                                AbstractNioMessageChannel#doBeginRead();
+																									AbstractNioChannel#doBeginRead()
                                                                                                     selectionKey.interestOps(interestOps | readInterestOp);  // readInterestOp = SelectionKey.OP_ACCEPT = 1 << 4 = 16;  开始接受客户端的连接
-
-
-                                                                                            AbstractNioChannel.AbstractNioUnsafe#doBeginRead  //selectionKey注册accept事件，开始接受客户端连接
-                                                                                            safeSetSuccess(promise); // 这里回调的是 ChannelFuture f = b.bind(PORT).sync().addListener(....) 的listener
+                                                        safeSetSuccess(promise); // 这里回调的是 ChannelFuture f = b.bind(PORT).sync().addListener(....) 的listener
 
 						
 						
