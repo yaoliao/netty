@@ -137,6 +137,9 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
             return continueReading(defaultMaybeMoreSupplier);
         }
 
+        // 对于 NioServerSocketChannel ,在 NioMessageUnsafe#read 的循环中
+        // 先执行了allocHandle.incMessagesRead(localRead); 再去判断 allocHandle.continueReading()
+        // 所以 totalBytesRead == 1 return true 所以只循环一次 也就是每次只接受一个客户端的连接
         @Override
         public boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier) {
             return config.isAutoRead() &&

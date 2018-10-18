@@ -672,7 +672,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             // to a spin loop
             // readyOps == 0 是对 JDK Bug 的处理，防止空的死循环
             if ((readyOps & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0 || readyOps == 0) {
-                unsafe.read();
+                unsafe.read();  // NioMessageUnsafe#read()
             }
         } catch (CancelledKeyException ignored) {
             unsafe.close(unsafe.voidPromise());

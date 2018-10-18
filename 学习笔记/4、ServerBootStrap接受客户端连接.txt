@@ -1,0 +1,12 @@
+
+1、在 NioEventLoop#processSelectedKey 对具体感兴趣的事件进行处理 ，当有客户端连接时 会调用 unsafe.read();  // NioMessageUnsafe#read()
+
+2、 NioMessageUnsafe#read()
+        doReadMessages(readBuf); // 读取客户端的连接到 readBuf 中
+            doReadMessages() // NioServerSocketChannel
+                SocketUtils.accept(javaChannel());
+                buf.add(new NioSocketChannel(this, ch));
+            allocHandle.incMessagesRead(localRead);  // 累加读到的消息数  allocHandle = MaxMessageHandle
+            pipeline.fireChannelRead(readBuf.get(i));  // ---重要---  会调用 pipeline 链中的 ServerBootstrapAcceptor#channelRead  这里才是真正 将客户端的 Netty NioSocketChannel 注册到 EventLoop 上
+                .......
+            pipeline.fireChannelReadComplete();  // 一样 调用 pipeline 链中的各 handler 的 ChannelReadComplete()
