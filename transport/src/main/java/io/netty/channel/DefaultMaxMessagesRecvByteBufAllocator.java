@@ -96,7 +96,7 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
             @Override
             public boolean get() {
                 return attemptedBytesRead == lastBytesRead;
-            }
+            }   // 判断读取的字节数是否等于最大可读取字节数
         };
 
         /**

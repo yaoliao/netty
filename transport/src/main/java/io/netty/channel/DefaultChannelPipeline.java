@@ -1276,6 +1276,11 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
 
         @Override
+        public ChannelFuture write(Object msg) {
+            return super.write(msg);
+        }
+
+        @Override
         public ChannelHandler handler() {
             return this;
         }

@@ -131,12 +131,15 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
         @Override
         public final void read() {
             final ChannelConfig config = config();
+
+            // 移除对 SelectionKey.OP_READ 事件的感兴趣。
             if (shouldBreakReadReady(config)) {
                 clearReadPending();
                 return;
             }
             final ChannelPipeline pipeline = pipeline();
             final ByteBufAllocator allocator = config.getAllocator();
+            // RecvByteBufAllocator = AdaptiveRecvByteBufAllocator    Handle = HandleImpl
             final RecvByteBufAllocator.Handle allocHandle = recvBufAllocHandle();
             allocHandle.reset(config);
 
@@ -144,7 +147,9 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
             boolean close = false;
             try {
                 do {
+                    // 申请 ByteBuf 对象
                     byteBuf = allocHandle.allocate(allocator);
+                    // 读取数据，并记录读取的数据数
                     allocHandle.lastBytesRead(doReadBytes(byteBuf));
                     if (allocHandle.lastBytesRead() <= 0) {
                         // nothing was read. release the buffer.

@@ -722,6 +722,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
             ReferenceCountUtil.release(msg);
             throw e;
         }
+        // 写入消息( 数据 )到内存队列
         write(msg, false, promise);
 
         return promise;
@@ -809,6 +810,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
 
     private void write(Object msg, boolean flush, ChannelPromise promise) {
         AbstractChannelHandlerContext next = findContextOutbound();
+        // 记录 Record 记录
         final Object m = pipeline.touch(msg, next);
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {

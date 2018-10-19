@@ -870,6 +870,8 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             assertEventLoop();
 
             ChannelOutboundBuffer outboundBuffer = this.outboundBuffer;
+
+            // 内存队列为空
             if (outboundBuffer == null) {
                 // If the outboundBuffer is null we know the channel was closed and so
                 // need to fail the future right away. If it is not null the handling of the rest
@@ -883,7 +885,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
             int size;
             try {
+                // 过滤写入的消息( 数据 )
                 msg = filterOutboundMessage(msg);
+                // 计算消息的长度
                 size = pipeline.estimatorHandle().size(msg);
                 if (size < 0) {
                     size = 0;
