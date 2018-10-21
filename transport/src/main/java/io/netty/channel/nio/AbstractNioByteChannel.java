@@ -290,15 +290,17 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
     protected final void incompleteWrite(boolean setOpWrite) {
         // Did not write completely.
+        // true ，注册对 SelectionKey.OP_WRITE 事件感兴趣
         if (setOpWrite) {
             setOpWrite();
-        } else {
+        } else {  // false ，取消对 SelectionKey.OP_WRITE 事件感兴趣
             // It is possible that we have set the write OP, woken up by NIO because the socket is writable, and then
             // use our write quantum. In this case we no longer want to set the write OP because the socket is still
             // writable (as far as we know). We will find out next time we attempt to write if the socket is writable
             // and set the write OP if necessary.
             clearOpWrite();
 
+            // 发起下一次 flush 任务
             // Schedule flush again later so other tasks can be picked up in the meantime
             eventLoop().execute(flushTask);
         }

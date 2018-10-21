@@ -661,6 +661,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 unsafe.finishConnect();
             }
 
+            /**
+             * 在上文 「7. NioSocketChannel」 中，在写入到 Channel 到对端，若 TCP 数据发送缓冲区已满，这将导致 Channel 不写可，
+             * 此时会注册对该 Channel 的 SelectionKey.OP_WRITE 事件感兴趣。从而实现，再在 Channel 可写后，进行强制 flush 。
+             */
             // Process OP_WRITE first as we may be able to write some queued buffers and so free memory.
             if ((readyOps & SelectionKey.OP_WRITE) != 0) {
                 // Call forceFlush which will also take care of clear the OP_WRITE once there is nothing left to write

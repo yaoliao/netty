@@ -255,6 +255,7 @@ public final class ChannelOutboundBuffer {
         if (!e.cancelled) {
             // only release message, notify and decrement if it was not canceled before.
             ReferenceCountUtil.safeRelease(msg);
+            // 此处才是，真正触发 Channel#write(...) 或 Channel#writeAndFlush(...) 方法，返回的 Promise 的通知
             safeSuccess(promise);
             decrementPendingOutboundBytes(size, false, true);
         }
@@ -779,6 +780,9 @@ public final class ChannelOutboundBuffer {
     }
 
     static final class Entry {
+        /**
+         * Recycler 对象，用于重用 Entry 对象
+         */
         private static final Recycler<Entry> RECYCLER = new Recycler<Entry>() {
             @Override
             protected Entry newObject(Handle<Entry> handle) {
@@ -786,16 +790,49 @@ public final class ChannelOutboundBuffer {
             }
         };
 
+        /**
+         * Recycler 处理器
+         */
         private final Handle<Entry> handle;
+        /**
+         * 下一条 Entry
+         */
         Entry next;
+        /**
+         * 消息（数据）
+         */
         Object msg;
+        /**
+         * {@link #msg} 转化的 NIO ByteBuffer 数组
+         */
         ByteBuffer[] bufs;
+        /**
+         * {@link #msg} 转化的 NIO ByteBuffer 对象
+         */
         ByteBuffer buf;
         ChannelPromise promise;
+        /**
+         * 已写入的字节数
+         */
         long progress;
+        /**
+         * 长度，可读字节数数。 通过 #total(Object msg) 方法来计算
+         */
         long total;
+        /**
+         * 每个 Entry 预计占用的内存大小，计算方式为消息( {@link #msg} )的字节数 + Entry 对象自身占用内存的大小。
+         */
         int pendingSize;
+        /**
+         * {@link #msg} 转化的 NIO ByteBuffer 的数量。
+         * <p>
+         * 当 = 1 时，使用 {@link #buf}
+         * 当 > 1 时，使用 {@link #bufs}
+         */
         int count = -1;
+        /**
+         * 是否取消写入对端
+         */
         boolean cancelled;
 
         private Entry(Handle<Entry> handle) {

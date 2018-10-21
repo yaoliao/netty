@@ -910,12 +910,15 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+            // 标记内存队列开始 flush
             outboundBuffer.addFlush();
+            // 执行 flush
             flush0();
         }
 
         @SuppressWarnings("deprecation")
         protected void flush0() {
+            // 正在 flush 中，所以直接返回。
             if (inFlush0) {
                 // Avoid re-entrance
                 return;
@@ -944,6 +947,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             }
 
             try {
+                // 执行真正的写入到对端
                 doWrite(outboundBuffer);
             } catch (Throwable t) {
                 if (t instanceof IOException && config().isAutoClose()) {
