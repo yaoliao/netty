@@ -22,4 +22,19 @@
     在 NioEventLoop#processSelectedKey 对具体感兴趣的事件进行处理 ，当有客户端连接时 会调用 unsafe.read();  // NioByteUnsafe#read()
 
 
+---------------------- write 操作  --------------------
 
+    AbstractChannel#write
+        pipeline.write(msg);
+            .....
+                HeadContext#write
+                    AbstractChannel.AbstractUnsafe#write
+
+
+---------------------- flush 操作  --------------------
+
+    AbstractChannel#flush
+        pipeline.flush();
+            .....
+                HeadContext#flush
+                    AbstractChannel.AbstractUnsafe#flush

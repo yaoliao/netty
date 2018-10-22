@@ -291,9 +291,11 @@ public abstract class AbstractByteBuf extends ByteBuf {
             }
         }
 
+        // 默认两倍扩容
         // Normalize the current capacity to the power of 2.
         int newCapacity = alloc().calculateNewCapacity(writerIndex + minWritableBytes, maxCapacity);
 
+        // 设置新的容量大小 这里才真正扩容
         // Adjust to the new capacity.
         capacity(newCapacity);
     }
@@ -312,11 +314,14 @@ public abstract class AbstractByteBuf extends ByteBuf {
 
         final int maxCapacity = maxCapacity();
         final int writerIndex = writerIndex();
+        // 超过最大上限
         if (minWritableBytes > maxCapacity - writerIndex) {
+            // 不强制设置，或者已经到达最大容量
             if (!force || capacity() == maxCapacity) {
                 return 1;
             }
 
+            // 设置为最大容量
             capacity(maxCapacity);
             return 3;
         }
