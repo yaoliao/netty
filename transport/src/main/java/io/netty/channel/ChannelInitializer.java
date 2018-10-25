@@ -110,7 +110,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
 
     @SuppressWarnings("unchecked")
     private boolean initChannel(ChannelHandlerContext ctx) throws Exception {
-        if (initMap.putIfAbsent(ctx, Boolean.TRUE) == null) { // Guard against re-entrance.
+        if (initMap.putIfAbsent(ctx, Boolean.TRUE) == null) { // Guard against re-entrance.  解决并发问题
             try {
                 initChannel((C) ctx.channel());
             } catch (Throwable cause) {
@@ -127,6 +127,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
 
     private void remove(ChannelHandlerContext ctx) {
         try {
+            // 从 pipeline 移除 ChannelInitializer
             ChannelPipeline pipeline = ctx.pipeline();
             if (pipeline.context(this) != null) {
                 pipeline.remove(this);
